@@ -1,3 +1,4 @@
+pydantic==1.10.15
 rocketry
 fastapi
 uvicorn[standard]
