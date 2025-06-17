@@ -1,0 +1,32 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cronjob-ingress
+  namespace: cronjob
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - cronjob.spacearena.net
+      secretName: cronjob-tls
+  rules:
+    - host: cronjob.spacearena.net
+      http:
+        paths:
+          - path: /api(/|$)(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: cronjob-api
+                port:
+                  number: 8000
+          - path: /()(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: cronjob-frontend
+                port:
+                  number: 80
