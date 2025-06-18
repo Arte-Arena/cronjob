@@ -4,7 +4,7 @@ metadata:
   name: cronjob-ingress
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /$2
-    cert-manager.io/cluster-issuer: letsencrypt-prod
+    cert-manager.io/cluster-issuer: cronjob-cluster-issuer
 spec:
   ingressClassName: nginx
   tls:
