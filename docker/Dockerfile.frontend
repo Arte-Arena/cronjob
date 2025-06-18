@@ -3,12 +3,17 @@ FROM node:20-alpine AS build
 WORKDIR /app
 COPY frontend/package*.json ./
 RUN npm install
+
 COPY frontend/ .
 RUN npm run build
 
-FROM nginx:alpine
-COPY --from=build /app/build /usr/share/nginx/html
+# Fase final: usar serve para servir o React com fallback
+FROM node:20-alpine
+
+WORKDIR /app
+COPY --from=build /app/build ./build
+
+RUN npm install -g serve
+
 EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
-
-
+CMD ["serve", "-s", "build", "-l", "80"]
