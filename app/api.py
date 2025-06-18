@@ -7,13 +7,16 @@ Modify the routes as you wish.
 
 import datetime
 import time
+import httpx
+from app.db import db
 from typing import List, Literal, Optional
 from pydantic import BaseModel, Field, validator
 from redbird.oper import in_, between, greater_equal
 from fastapi import APIRouter, FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
-from scheduler import app as app_rocketry
-from app.db import db
+from app.scheduler import app as app_rocketry
+from rocketry.core.task import FuncTask
+
 app = FastAPI(
     title="Rocketry with FastAPI",
     description="This is a REST API for a scheduler. It uses FastAPI as the web framework and Rocketry for scheduling."
@@ -31,6 +34,52 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Schedule Message
+# -----------------------------
+
+class MessageScheduleRequest(BaseModel):
+    name: str
+    clients: List[str]
+    template: str
+    send_at: datetime
+    
+@app.post("/schedule-message", tags=["scheduler"])
+async def schedule_message(payload: MessageScheduleRequest):
+    # 1. Persistir agendamento no Mongo
+    doc = {
+        "name": payload.name,
+        "clients": payload.clients,
+        "template": payload.template,
+        "send_at": payload.send_at,
+        "status": "scheduled",
+        "created_at": datetime.utcnow()
+    }
+    result = await db.scheduled_messages.insert_one(doc)
+
+    # 2. Criar tarefa dinâmica no Rocketry
+    async def send_task():
+        async with httpx.AsyncClient() as client:
+            await client.post("https://api.erp.local/send", json={
+                "template": payload.template,
+                "clients": payload.clients
+            })
+        # Após disparo, atualizar status no Mongo
+        await db.scheduled_messages.update_one(
+            {"_id": result.inserted_id},
+            {"$set": {"status": "sent", "sent_at": datetime.utcnow()}}
+        )
+
+    task = FuncTask(
+        func=send_task,
+        name=f"task_{payload.name}",
+        start_cond=f"once @ {payload.send_at.strftime('%Y-%m-%d %H:%M')}",
+        app=app_rocketry
+    )
+    app_rocketry.session.add_task(task)
+
+    return {"status": "scheduled", "task": task.name, "id": str(result.inserted_id)}
+    
 
 # Models (for serializing JSON)
 # -----------------------------
