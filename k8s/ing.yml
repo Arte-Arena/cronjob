@@ -15,7 +15,7 @@ spec:
     - host: cronjob.spacearena.net
       http:
         paths:
-          - path: /
+          - path: /api
             pathType: Prefix
             backend:
               service:
