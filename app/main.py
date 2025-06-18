@@ -9,8 +9,8 @@ import logging
 
 import uvicorn
 
-from api import app as app_fastapi
-from scheduler import app as app_rocketry
+from app.api import app as app_fastapi
+from app.scheduler import app as app_rocketry
 
 from redbird.repos import CSVFileRepo
 from rocketry.log import MinimalRecord
