@@ -4,6 +4,7 @@ metadata:
   name: cronjob-ingress
   annotations:
     cert-manager.io/cluster-issuer: cronjob-cluster-issuer
+    spec.ingressClassName: "public"
 spec:
   ingressClassName: nginx
   tls:
