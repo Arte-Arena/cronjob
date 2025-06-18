@@ -6,7 +6,7 @@ metadata:
     cert-manager.io/cluster-issuer: cronjob-cluster-issuer
     spec.ingressClassName: "public"
 spec:
-  ingressClassName: nginx
+  ingressClassName: public
   tls:
     - hosts:
         - cronjob.spacearena.net
