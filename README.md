@@ -47,9 +47,9 @@ uvicorn main:app --reload
 
 ## ✅ Testes Automatizados
 
-Os testes são implementados com pytest e httpx.AsyncClient, e validam funcionalidades essenciais como o endpoint de agendamento /schedule-message. 
+Os testes são implementados com pytest e httpx.AsyncClient, e validam funcionalidades essenciais como o endpoint de agendamento /schedule-message. Rode os teste com o seguinte comando na raiz do projeto:
 
-`pytest tests/`
+`python -m pytest`
 
 Utilizamos httpx.AsyncClient diretamente contra a instância do FastAPI (app=app) nos testes. Essa abordagem permite reproduzir o comportamento do cliente real com maior precisão (especialmente para rotas como /schedule-message, que envolvem persistência assíncrona no MongoDB e criação de tarefas dinâmicas). Desta forma, consesguimos testar a API de forma realista sem subir o servidor com o `uvicorn`.
 
