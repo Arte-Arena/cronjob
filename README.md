@@ -47,9 +47,9 @@ uvicorn main:app --reload
 
 ## ✅ Testes Automatizados
 
-Os testes são implementados com pytest e httpx.AsyncClient, e validam funcionalidades essenciais como o endpoint de agendamento /schedule-message. 
+Os testes são implementados com pytest e httpx.AsyncClient, e validam funcionalidades essenciais como o endpoint de agendamento /schedule-message. Rode os teste com o seguinte comando na raiz do projeto:
 
-`pytest tests/`
+`python -m pytest`
 
 Utilizamos httpx.AsyncClient diretamente contra a instância do FastAPI (app=app) nos testes. Essa abordagem permite reproduzir o comportamento do cliente real com maior precisão (especialmente para rotas como /schedule-message, que envolvem persistência assíncrona no MongoDB e criação de tarefas dinâmicas). Desta forma, consesguimos testar a API de forma realista sem subir o servidor com o `uvicorn`.
 
@@ -70,3 +70,19 @@ start_cond="once @ 2025-06-19 14:30"
 Com isso, o Rocketry mantém internamente o controle de quando executar a função. Nenhuma fila intermediária é necessária. A execução ocorre em background, em workers controlados pelo próprio Rocketry. Quando você registra uma tarefa via FastAPI (/schedule-message), a função salva o agendamento no MongoDB, cria dinamicamente um FuncTask com `start_cond` e adiciona ao `app_rocketry.session`.
 
 Rocketry fica rodando em paralelo ao FastAPI (graças ao asyncio.create_task() em main.py), verificando continuamente suas condições internas e executando tarefas automaticamente no tempo certo, sem a necessidade de enfileiramento externo. Se quiser no futuro, é possível complementar com filas para lidar com cargas altas ou retries complexos, mas para a maioria dos casos de agendamento temporal, o Rocketry resolve de forma nativa e eficiente.
+
+# 📂 Estrutura do projeto
+
+app/
+├── api.py           # FastAPI app e rotas
+├── db.py            # Conexão com MongoDB via motor
+├── scheduler.py     # Rocketry tasks e configurações
+├── main.py          # Executor Rocketry + FastAPI
+tests/
+├── test_schedule_message.py  # Teste da rota /schedule-message
+
+# 🛠️ Manutenção e Escalabilidade
+
+O projeto é modular, facilmente extensível para múltiplos tipos de tarefas, e pode ser escalado horizontalmente em clusters Kubernetes. Tarefas persistidas no MongoDB são carregadas na inicialização via load_schedules().
+
+

@@ -1,5 +1,8 @@
 # app/db.py
 
+from dotenv import load_dotenv
+load_dotenv()
+
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 

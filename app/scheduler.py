@@ -1,36 +1,19 @@
-# app/scheduler.py
+from app.db import db
+from datetime import datetime
+import httpx
+from app.routes.rocketry_routes import app_rocketry
 
-"""
-This file contains Rocketry app.
-Add your tasks here, conditions etc. here.
-"""
-import asyncio
-from rocketry import Rocketry
-from rocketry.conds import every
+async def load_schedules():
+    async for doc in db.scheduled_messages.find({"status": "scheduled"}):
+        async def send_task(clients=doc["clients"], template=doc["template"], task_id=doc["_id"]):
+            async with httpx.AsyncClient() as client:
+                await client.post("https://api.erp.local/send", json={"template": template, "clients": clients})
+            await db.scheduled_messages.update_one({"_id": task_id}, {"$set": {"status": "sent", "sent_at": datetime.utcnow()}})
 
-app = Rocketry(config={"task_execution": "async"})
+        app_rocketry.task_factory.add(
+            func=send_task,
+            name=f"task_{doc['name']}",
+            start_cond=f"once @ {doc['send_at'].strftime('%Y-%m-%d %H:%M')}"
+        )
 
-@app.task(every('10 seconds', based="finish"))
-async def do_permanently():
-    "This runs for really long time"
-    await asyncio.sleep(600000)
 
-@app.task(every('2 seconds', based="finish"))
-async def do_short():
-    "This runs for short time"
-    await asyncio.sleep(1)
-
-@app.task(every('20 seconds', based="finish"))
-async def do_long():
-    "This runs for long time"
-    await asyncio.sleep(60)
-
-@app.task(every('10 seconds', based="finish"))
-async def do_fail():
-    "This fails constantly"
-    await asyncio.sleep(10)
-    raise RuntimeError("Whoops!")
-
-if __name__ == "__main__":
-    # Run only Rocketry
-    app.run()
