@@ -1,18 +1,22 @@
 # app/main.py
 
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__) + "/.."))
+
 import asyncio
 import logging
 
 import uvicorn
 from redbird.logging import RepoHandler
 from redbird.repos import CSVFileRepo
-from rocketry.log import MinimalRecord
+from rocketry.log import MinimalRecord  # Pode deixar importado se quiser usar futuramente
 
 from app.api import app
 from app.rocketry_app import app_rocketry
 
 logger = logging.getLogger("rocketry.task")
-handler = RepoHandler(repo=CSVFileRepo("logs/tasks.csv", model=MinimalRecord))
+handler = RepoHandler(repo=CSVFileRepo(filename="logs/tasks.csv", model=MinimalRecord))
 logger.addHandler(handler)
 
 
@@ -31,6 +35,5 @@ async def main():
 if __name__ == "__main__":
     logger.addHandler(logging.StreamHandler())
     asyncio.run(main())
-
 
 
