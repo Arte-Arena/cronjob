@@ -9,10 +9,10 @@ spec:
   ingressClassName: public
   tls:
     - hosts:
-        - cronjob.spacearena.net
+        - api.cronjob.spacearena.net
       secretName: cronjob-tls
   rules:
-    - host: cronjob.spacearena.net
+    - host: api.cronjob.spacearena.net
       http:
         paths:
           - path: /api
