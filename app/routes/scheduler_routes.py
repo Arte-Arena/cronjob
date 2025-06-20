@@ -43,6 +43,8 @@ async def schedule_message(payload: CreateMessageRequest):
     try:
         result = await db.scheduled_messages.insert_one(doc)
         print("✅ Inserido no MongoDB:", result.inserted_id)
+        count = await db.scheduled_messages.count_documents({})
+        print("📦 Total após insert:", count)
     except Exception as e:
         print("❌ Erro ao inserir no MongoDB:", e)
 
