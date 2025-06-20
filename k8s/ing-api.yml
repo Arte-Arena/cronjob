@@ -1,7 +1,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: cronjob-ingress
+  name: cronjob-api
   annotations:
     cert-manager.io/cluster-issuer: cronjob-cluster-issuer
     spec.ingressClassName: "public"
@@ -15,17 +15,11 @@ spec:
     - host: api.cronjob.spacearena.net
       http:
         paths:
-          - path: /api
+          - path: /
             pathType: Prefix
             backend:
               service:
                 name: cronjob-api-svc
                 port:
                   number: 8003
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: cronjob-frontend-svc
-                port:
-                  number: 80
+
