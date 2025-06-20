@@ -16,7 +16,7 @@ spec:
         - name: api
           image: artearenahub/cronjob-api:latest
           ports:
-            - containerPort: 8000
+            - containerPort: 8003
           envFrom:
             - secretRef:
                 name: cronjob-mongo-secret
