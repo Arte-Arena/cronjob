@@ -1,6 +1,6 @@
-# Cronjob da Arte Arena
+# 🕒 Cronjob da Arte Arena
 
-Agendador de tarefas backend da Arte Arena, containerizado e preparado para rodar em clusters MicroK8s/Kubernetes. Baseado no framework [Rocketry](https://github.com/Miksus/rocketry) com API FastAPI para controle e observabilidade.
+Agendador de tarefas assíncronas da Arte Arena, containerizado e pronto para produção em clusters MicroK8s/Kubernetes. Desenvolvido com [Rocketry](https://github.com/Miksus/rocketry) para agendamento declarativo e [FastAPI](https://fastapi.tiangolo.com/) para controle via API HTTP. Persistência em MongoDB e execução desacoplada, eficiente e confiável.
 
 ---
 
@@ -8,27 +8,27 @@ Agendador de tarefas backend da Arte Arena, containerizado e preparado para roda
 
 Este serviço executa tarefas automatizadas como:
 
-- Sincronizações periódicas com serviços externos
+- Agendamento de mensagens e notificações
+- Sincronizações com serviços externos
 - Envio automático de relatórios e alertas
-- Limpezas e manutenção de dados
-- Qualquer rotina programável em Python agendada por cron-like ou lógica customizada
+- Limpeza de dados, manutenção e rotinas recorrentes
+- Qualquer lógica programável em Python com base em tempo
 
-É fortemente inspirado no projeto [rocketry-with-fastapi](https://github.com/Miksus/rocketry-with-fastapi), com adaptações para produção e execução containerizada.
+Inspirado em [rocketry-with-fastapi](https://github.com/Miksus/rocketry-with-fastapi), mas com diversas adaptações para uso real em produção, incluindo integração completa com MongoDB, execução assíncrona robusta e testes automatizados.
 
 ---
 
-## ⚙️ Tecnologias
+## ⚙️ Tecnologias Utilizadas
 
 - Python 3.11+
 - [Rocketry](https://github.com/Miksus/rocketry)
 - [FastAPI](https://fastapi.tiangolo.com/)
-- [Motor (MongoDB async)](https://motor.readthedocs.io/)
-- [HTTPX](https://www.python-httpx.org/) para clientes assíncronos
-- [Pytest](https://docs.pytest.org/) para testes
-- Docker
-- MicroK8s / Kubernetes
-- Uvicorn
-- Pydantic
+- [Motor](https://motor.readthedocs.io/) (driver async do MongoDB)
+- [HTTPX](https://www.python-httpx.org/) para chamadas assíncronas
+- [Uvicorn](https://www.uvicorn.org/) como servidor ASGI
+- [Pydantic v1](https://docs.pydantic.dev/1.10/)
+- [Pytest](https://docs.pytest.org/) + [pytest-asyncio](https://pypi.org/project/pytest-asyncio/)
+- Docker / Kubernetes / MicroK8s
 
 ---
 
@@ -47,42 +47,113 @@ uvicorn main:app --reload
 
 ## ✅ Testes Automatizados
 
-Os testes são implementados com pytest e httpx.AsyncClient, e validam funcionalidades essenciais como o endpoint de agendamento /schedule-message. Rode os teste com o seguinte comando na raiz do projeto:
+Os testes utilizam pytest e httpx.AsyncClient, validando funcionalidades como:
+
+- Persistência no MongoDB
+- Agendamento correto com start_cond
+- Retorno esperado do endpoint /schedule-message
+
+Para rodar os testes:
 
 `python -m pytest`
 
-Utilizamos httpx.AsyncClient diretamente contra a instância do FastAPI (app=app) nos testes. Essa abordagem permite reproduzir o comportamento do cliente real com maior precisão (especialmente para rotas como /schedule-message, que envolvem persistência assíncrona no MongoDB e criação de tarefas dinâmicas). Desta forma, consesguimos testar a API de forma realista sem subir o servidor com o `uvicorn`.
+Os testes não sobem o servidor (uvicorn), mas interagem diretamente com a instância FastAPI in-memory. Isso permite testes rápidos, assíncronos e realistas.
 
-## 🧭 Importância do start_cond na Integração FastAPI + Rocketry
+## 🧠 Como funciona o agendamento com Rocketry
 
-Na funcionalidade de Agendamento de Envio de Mensagens, o campo start_cond é essencial para definir o momento exato em que a tarefa deve ser executada dentro do Rocketry. Essa condição é gerada dinamicamente pela API FastAPI com base no horário informado (send_at) e determina quando o Rocketry deverá disparar a execução assíncrona da mensagem. 
+Quando a API `/schedule-message` é chamada, um novo agendamento é salvo no MongoDB e uma tarefa dinâmica é criada com a seguinte instrução:
 
-O uso de `start_cond="once @ {timestamp}"` permite que cada tarefa seja única e programada apenas uma vez, o que é ideal para agendamentos individuais e pontuais como notificações e alertas. Sem essa configuração explícita, a integração perderia a capacidade de agendar tarefas com precisão temporal, comprometendo a previsibilidade e confiabilidade do sistema de envio automático. 
+    Quando a API /schedule-message é chamada, um novo agendamento é salvo no MongoDB e uma tarefa dinâmica é criada com a seguinte instrução:
 
-Portanto, o `start_cond` atua como o elo entre o backend assíncrono da API e o scheduler de tarefas do Rocketry, garantindo que a lógica de tempo do usuário seja respeitada na execução.
+Rocketry então:
 
-Rocketry é um agendador declarativo baseado em tempo (start_cond), e não depende de filas de tarefas. As tarefas são registradas no session do Rocketry com instruções como:
+- Registra a tarefa como FuncTask com base na start_cond
+- Monitora a execução em background, sem depender de filas externas
+- Executa automaticamente no momento certo, sem intervenção manual
 
-```
-start_cond="once @ 2025-06-19 14:30"
-```
+Essa abordagem garante:
 
-Com isso, o Rocketry mantém internamente o controle de quando executar a função. Nenhuma fila intermediária é necessária. A execução ocorre em background, em workers controlados pelo próprio Rocketry. Quando você registra uma tarefa via FastAPI (/schedule-message), a função salva o agendamento no MongoDB, cria dinamicamente um FuncTask com `start_cond` e adiciona ao `app_rocketry.session`.
+- Precisão temporal confiável
+- Execução direta via `async def`
+- Nenhuma dependência de Celery, Redis, RabbitMQ ou brokers externos
+- Escalabilidade via múltiplas réplicas Kubernetes com base no MongoDB
 
-Rocketry fica rodando em paralelo ao FastAPI (graças ao asyncio.create_task() em main.py), verificando continuamente suas condições internas e executando tarefas automaticamente no tempo certo, sem a necessidade de enfileiramento externo. Se quiser no futuro, é possível complementar com filas para lidar com cargas altas ou retries complexos, mas para a maioria dos casos de agendamento temporal, o Rocketry resolve de forma nativa e eficiente.
+---
 
-# 📂 Estrutura do projeto
+## 📂 Estrutura do Projeto
 
-app/
-├── api.py           # FastAPI app e rotas
-├── db.py            # Conexão com MongoDB via motor
-├── scheduler.py     # Rocketry tasks e configurações
-├── main.py          # Executor Rocketry + FastAPI
-tests/
-├── test_schedule_message.py  # Teste da rota /schedule-message
+    app/
+    ├── api.py             # Rotas da API FastAPI
+    ├── db.py              # Conexão MongoDB (motor async)
+    ├── scheduler.py       # Tarefas Rocketry
+    ├── main.py            # Executor principal (FastAPI + Rocketry)
+    ├── models.py          # Esquemas Pydantic/MongoDB (se necessário)
+    tests/
+    └── test_schedule_message.py  # Teste da API de agendamento
 
-# 🛠️ Manutenção e Escalabilidade
+---
 
-O projeto é modular, facilmente extensível para múltiplos tipos de tarefas, e pode ser escalado horizontalmente em clusters Kubernetes. Tarefas persistidas no MongoDB são carregadas na inicialização via load_schedules().
+## 🛠️ Deploy e Escalabilidade
+
+- Deploy via MicroK8s com dois containers separados:
+-- `cronjob-api` (FastAPI)
+-- `cronjob-scheduler` (Rocketry)
+- TLS com cert-manager e ClusterIssuer
+- Observabilidade via `/healthcheck`
+- Ingress separado para API (`api.cronjob.spacearena.net`)
+- Persistência em MongoDB remoto com autenticação
+- Condições de inicialização sincronizadas via `load_schedules()`
+
+---
+
+## 🔐 Considerações de Produção
+
+- Use variáveis de ambiente para segredos e URIs
+- Habilite autenticação nos endpoints (ex: Bearer Token)
+- Monitorar logs com `kubectl logs` ou ferramentas de observabilidade (Grafana, Loki, etc.)
+- Reforce a persistência com índices no MongoDB (por ex: `send_at`)
+
+---
+
+## 📎 Exemplo de Payload para /schedule-message
+
+    {
+    "to": "5511999999999",
+    "body": "Olá, {{1}}! Seu pedido será entregue em {{2}}.",
+    "userId": "abc123",
+    "type": "template",
+    "templateName": "notificacao_entrega",
+    "params": ["Leandro", "2 dias úteis"],
+    "send_at": "2025-06-21T14:00:00-03:00"
+    }
+
+A API substituirá os placeholders dinamicamente e criará uma tarefa com:
+
+    start_cond = "once @ 2025-06-21 14:00"
+
+---
+
+## 🧭 start_cond é o elo entre FastAPI e Rocketry
+
+Rocketry trabalha baseado em `condições declarativas`, não filas. A cada requisição da API:
+- A tarefa é registrada dinamicamente
+- É verificada continuamente por Rocketry no background
+- Executa no tempo certo, sem delay de polling
+
+Ideal para:
+
+- Agendamentos únicos e pontuais (ex: notificações por WhatsApp)
+- Situações onde precisão temporal é crítica
+- Execução assíncrona leve sem brokers
+
+---
+
+## 🧩 Futuras melhorias (sugestões)
+
+- Painel de agendamentos com status
+- Reagendamento com retry policy
+- Webhook para status de execução
+- Workers paralelos com fila opcional
+- Validação avançada com schemas por tipo de tarefa
 
 
