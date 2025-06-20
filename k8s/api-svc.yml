@@ -6,5 +6,5 @@ spec:
   selector:
     app: cronjob-api
   ports:
-    - port: 8000
-      targetPort: 8000
+    - port: 8003
+      targetPort: 8003
