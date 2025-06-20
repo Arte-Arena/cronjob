@@ -40,7 +40,11 @@ async def schedule_message(payload: CreateMessageRequest):
         "status": "scheduled",
         "created_at": datetime.now(timezone.utc),
     }
-    result = await db.scheduled_messages.insert_one(doc)
+    try:
+        result = await db.scheduled_messages.insert_one(doc)
+        print("✅ Inserido no MongoDB:", result.inserted_id)
+    except Exception as e:
+        print("❌ Erro ao inserir no MongoDB:", e)
 
     async def send_task():
         async with httpx.AsyncClient() as client:
