@@ -28,8 +28,7 @@ jobs:
           file: docker/Dockerfile.api
           push: true
           tags: artearenahub/cronjob-api:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          no-cache: true
 
       - name: Build e Push do Frontend
         uses: docker/build-push-action@v5
@@ -38,6 +37,5 @@ jobs:
           file: docker/Dockerfile.frontend
           push: true
           tags: artearenahub/cronjob-frontend:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          no-cache: true
 
