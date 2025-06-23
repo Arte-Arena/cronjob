@@ -26,7 +26,7 @@ class Task(BaseModel):
     force_termination: bool
     force_run: bool
 
-    status: str
+    status: Optional[str]
     is_running: bool
     last_run: Optional[datetime]
     last_success: Optional[datetime]
