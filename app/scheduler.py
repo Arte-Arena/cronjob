@@ -1,6 +1,7 @@
 # app/scheduler.py
 import logging
 from datetime import datetime, timezone
+from rocketry.conds import date, time_of_day
 import httpx
 
 from app.db import db
@@ -12,9 +13,12 @@ logger = logging.getLogger("scheduler")
 def _register_send_task(doc):
     """Helper para registrar uma única tarefa no Rocketry"""
     task_name = f"task_{doc['_id']}"
-    start_when = doc["send_at"].astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    send_at: datetime = doc["send_at"].astimezone(timezone.utc)
 
-    @app_rocketry.task(name=task_name, start_cond=f"once @ {start_when}")
+    @app_rocketry.task(                       # uma única condição composta
+        date.on(send_at.date())               # dia exato
+        & time_of_day.at(send_at.time())      # hora exata
+    , name=task_name)
     async def send_task():
         payload = {
             "to": doc["to"],
