@@ -96,12 +96,12 @@ def register_send_task(doc: Dict[str, Any]) -> None:
                 }},
             )
 
-    # 2️⃣ Registra a função como tarefa Rocketry
-    app_rocketry.task_factory.add(
+    # 2️⃣ Registra dinamicamente na sessão Rocketry
+    app_rocketry.session.create_task(
         func=send_task,
         name=task_name,
         start_cond=cron(cron_exp),
-        execution="async",          # boa prática: garante execução assíncrona
+        execution="async",
     )
 
     logger.info("📌 Registrado %s para cron '%s'", task_name, cron_exp)
