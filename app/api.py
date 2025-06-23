@@ -11,9 +11,16 @@ app = FastAPI(
     description="This is a REST API for a scheduler."
 )
 
+ALLOWED_ORIGINS = [
+    "http://localhost",
+    "http://localhost:3000",
+    "https://cronjob.spacearena.net",
+    "https://www.spacearena.net",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost", "http://localhost:3000"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

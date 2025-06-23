@@ -84,6 +84,7 @@ async def get_tasks():
         Task(
             start_cond=str(task.start_cond),
             end_cond=str(task.end_cond),
+            status=task.status or "pending",
             is_running=task.is_running,
             **task.dict(exclude={"start_cond", "end_cond"})
         )
