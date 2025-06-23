@@ -23,6 +23,7 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger("rocketry.task")
+os.makedirs("logs", exist_ok=True)
 handler = RepoHandler(repo=CSVFileRepo(filename="logs/tasks.csv", model=MinimalRecord))
 logger.addHandler(handler)
 
