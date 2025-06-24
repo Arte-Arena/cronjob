@@ -69,10 +69,14 @@ def register_send_task(doc: Dict[str, Any]) -> None:
 
         try:
             task_logger.info("🚀 Enviando payload para API externa")
+            headers = {}
+            if doc.get("auth_token"):
+                headers["Authorization"] = doc["auth_token"]
             async with httpx.AsyncClient() as client:
                 resp = await client.post(
                     "https://api.erp.spacearena.net/v1/space-desk/message",
                     json=payload,
+                    headers=headers if headers else None,
                 )
             task_logger.info("✅ API respondeu status=%s", resp.status_code)
 

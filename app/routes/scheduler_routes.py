@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import List, Optional, Literal
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Request
 from pydantic import BaseModel, Field
 
 from app.db import db
@@ -26,7 +26,7 @@ class CreateMessageRequest(BaseModel):
     send_at: Optional[datetime] = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 @router.post("/v1/space-desk/message")
-async def schedule_message(payload: CreateMessageRequest):
+async def schedule_message(payload: CreateMessageRequest, request: Request):
 
     # 📌 Validação de data/hora -----------------------------
     now_utc = datetime.now(timezone.utc)
@@ -37,6 +37,9 @@ async def schedule_message(payload: CreateMessageRequest):
                    f"Use um horário futuro."
         )
     # ----------------------------------------------------------
+
+    # Captura o token do header Authorization
+    auth_token = request.headers.get("authorization")
 
     print("[schedule_message] Recebido payload:", payload.dict())
     doc = {
@@ -49,6 +52,7 @@ async def schedule_message(payload: CreateMessageRequest):
         "send_at": payload.send_at,
         "status": "scheduled",
         "created_at": datetime.now(timezone.utc),
+        "auth_token": auth_token,
     }
     print("[schedule_message] Documento a ser inserido no MongoDB:", doc)
     try:
