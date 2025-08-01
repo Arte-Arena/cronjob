@@ -75,6 +75,12 @@ def register_send_task(doc: Dict[str, Any]) -> None:
             headers = {}
             if doc.get("auth_token"):
                 headers["Authorization"] = doc["auth_token"]
+                
+            print("headers: ", headers)
+            print("payload: ", payload)
+                
+                
+                
             async with httpx.AsyncClient() as client:
                 resp = await client.post(
                     "https://api.erp.spacearena.net/v1/space-desk/message",
@@ -88,6 +94,7 @@ def register_send_task(doc: Dict[str, Any]) -> None:
                     "status": "sent",
                     "sent_at": datetime.now(timezone.utc),
                     "response_status": resp.status_code,
+                    "agendado": "true",
                 }},
             )
         except Exception as exc:
